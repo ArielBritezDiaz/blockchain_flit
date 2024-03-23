@@ -11,11 +11,11 @@ import hashlib
 import json
 from flask import Flask, jsonify
 
-#Paso 1: Creación del blockchain
-class blockchain:
+#Paso 1: Creación del Blockchain
+class Blockchain:
     
     #initial chain
-    def _init_(self):
+    def __init__(self):
         self.chain = []
         self.create_block(proof = 1, previous_hash = "0")
     
@@ -82,9 +82,32 @@ class blockchain:
     
 
 
+#Paso 2: Minando el Blockchain
 
+#creación de web app con flask
+app = Flask(__name__)
+blockchain = Blockchain()
 
+#minamos un nuveo bloque
+@app.route('/mine_block', methods = ['GET'])
 
+def main_block():
+    previous_block = blockchain.get_previous_block() #ejecutamos la función declarada en Blockchain en línea 35
+    previous_proof = previous.block['proof'] #tomamos el proof del block definido en línea 27
+    
+    proof = blockchain.proof_of_work(previous_proof)
+    previous_hash = blockchain.hash(previous_block)
+    block = blockchain.create_block(proof, previous_hash)
+    
+    response = {
+        'message': 'Congratulations! You have successfully mined a block of the Flit Blockchain!',
+        'index': block['index'],
+        'timestamp': bloock['timestamp'],
+        'proof': block['proof'],
+        'previous_hash': block['previous_hash']
+    }
+    
+    return jsonify(response), 200
 
 
 
