@@ -51,7 +51,7 @@ class Blockchain:
             return new_proof
     
     
-    def hash(self.block):
+    def hash(self, block):
         #codificamos el block para que sea aceptado por el hash operation
         encoded_block = json.dumps(block, sort_keys = True).encode() #le pasamos el bloque que estamos codificando y el diccionario del bloque ordenado por llaves
         return hashlib.sha256(encoded_block).hexdigest()
@@ -93,7 +93,7 @@ blockchain = Blockchain()
 
 def main_block():
     previous_block = blockchain.get_previous_block() #ejecutamos la función declarada en Blockchain en línea 35
-    previous_proof = previous.block['proof'] #tomamos el proof del block definido en línea 27
+    previous_proof = previous_block['proof'] #tomamos el proof del block definido en línea 27
     
     proof = blockchain.proof_of_work(previous_proof)
     previous_hash = blockchain.hash(previous_block)
@@ -102,15 +102,26 @@ def main_block():
     response = {
         'message': 'Congratulations! You have successfully mined a block of the Flit Blockchain!',
         'index': block['index'],
-        'timestamp': bloock['timestamp'],
+        'timestamp': block['timestamp'],
         'proof': block['proof'],
         'previous_hash': block['previous_hash']
     }
     
     return jsonify(response), 200
 
+#obteniendo cadena completa
+@app.route('/get_chain', methods = ['GET'])
 
+def get_chain():
+    response = {
+        'chain': blockchain.chain,
+        'length': len(blockchain.chain)
+    }
+    
+    return jsonify(response), 200
 
+#corriendo la web app flask
+app.run(host = '0.0.0.0', port = '5000')
 
 
 
