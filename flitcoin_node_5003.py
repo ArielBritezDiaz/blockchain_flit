@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sat Mar 23 19:32:32 2024
+Created on Sat Mar 23 22:21:07 2024
 
 @author: arieldiaz
 """
@@ -9,8 +9,9 @@ Created on Sat Mar 23 19:32:32 2024
 import datetime
 import hashlib
 import json
-from flask import Flask, jsonify
-import requests #para agarrar los nodos correctos cuandos se verifiquen que los nodos están bien
+from flask import Flask, jsonify, request
+#para agarrar los nodos correctos cuandos se verifiquen que los nodos están bien
+import requests
 from uuid import uuid4
 from urllib.parse import urlparse
 
@@ -38,8 +39,8 @@ class Blockchain:
             
             #tomamos la cadena más larga
             if response.status_code == 200:
-                length = response.json(['length'])
-                chain = response.json(['chain'])
+                length = response.json()['length']
+                chain = response.json()['chain']
                 
                 if length > max_length and self.is_chain_valid(chain):
                     max_length = length
@@ -61,15 +62,15 @@ class Blockchain:
             'transactions': self.transactions
         }
         
-        self.transaction = []
+        self.transactions = []
         self.chain.append(block)
         return block
     
     #transactions
-    def add_transaction(self, sender, reciever, amount):
-        self.transaction.append({
+    def add_transaction(self, sender, receiver, amount):
+        self.transactions.append({
             'sender': sender,
-            'reciever': reciever,
+            'receiver': receiver,
             'amount': amount
         })
         previous_block = self.get_previous_block()
@@ -131,7 +132,7 @@ class Blockchain:
 #creación de web app con flask
 app = Flask(__name__)
 
-#creando una dirección para el nodo en port 5000
+#creando una dirección para el nodo en port 5003
 node_address = str(uuid4()).replace('-', '')
 
 blockchain = Blockchain()
@@ -144,7 +145,7 @@ def main_block():
     
     proof = blockchain.proof_of_work(previous_proof)
     previous_hash = blockchain.hash(previous_block)
-    blockchain.add_transaction(sender = node_address, reciever = 'Ariel', amount = 1)
+    blockchain.add_transaction(sender = node_address, receiver = 'Eric', amount = 1)
     block = blockchain.create_block(proof, previous_hash)
     
     response = {
@@ -193,10 +194,10 @@ def add_transaction():
     if not all (key in json for key in transaction_keys):
         return 'Some element of the transaction is missing', 401
     
-    index = blockchain.add_transaction(json['sender'], json['reciever'], json['amount'])
-    response = [
+    index = blockchain.add_transaction(json['sender'], json['receiver'], json['amount'])
+    response = {
         'message': f'The transaction will be added to the block and the block will be {index}'
-    ]
+    }
     
     return jsonify(response), 201
     
@@ -222,7 +223,7 @@ def connect_node():
     return jsonify(response), 201
 
 #reemplazando la cadena por la más larga
-@app_route('/replace_chain', methods = ['GET'])
+@app.route('/replace_chain', methods = ['GET'])
 def replace_chain():
     is_chain_replaced = blockchain.replace_chain()
     
@@ -240,4 +241,4 @@ def replace_chain():
     return jsonify(response), 200
 
 #corriendo la web app flask
-app.run(host = '0.0.0.0', port = '5000')
+app.run(host = '0.0.0.0', port = '5003')

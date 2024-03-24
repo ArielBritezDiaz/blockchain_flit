@@ -136,20 +136,3 @@ def is_valid():
 
 #corriendo la web app flask
 app.run(host = '0.0.0.0', port = '5000')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
