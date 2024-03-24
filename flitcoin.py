@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sat Mar 23 17:40:32 2024
+Created on Sat Mar 23 19:32:32 2024
 
 @author: arieldiaz
 """
@@ -10,6 +10,9 @@ import datetime
 import hashlib
 import json
 from flask import Flask, jsonify
+import requests #para agarrar los nodos correctos cuandos se verifiquen que los nodos están bien
+from uuid import uuid4
+from urllib.parse import urlparse
 
 #Paso 1: Creación del Blockchain
 class Blockchain:
@@ -17,7 +20,36 @@ class Blockchain:
     #initial chain
     def __init__(self):
         self.chain = []
+        self.transactions = []
         self.create_block(proof = 1, previous_hash = "0")
+        self.nodes = set()
+        
+    def add_node(self, address):
+        parsed_url = urlparse(address)
+        self.nodes.add(parsed_url.netloc)
+        
+    def replace_chain(self):
+        network = self.nodes
+        longest_chain = None
+        max_length = len(self.chain) #es la chain que estamos trabajando en el momento
+        
+        for node in network:
+            response = requests.get(f'http://{node}/get_chain')
+            
+            #tomamos la cadena más larga
+            if response.status_code == 200:
+                length = response.json(['length'])
+                chain = response.json(['chain'])
+                
+                if length > max_length and self.is_chain_valid(chain):
+                    max_length = length
+                    longest_chain = chain
+                    
+            if longest_chain:
+                self.chain = longest_chain
+                return True
+            
+            return False
     
     #create one block
     def create_block(self, proof, previous_hash):
@@ -25,11 +57,23 @@ class Blockchain:
             'index': len(self.chain) + 1,
             'timestamp': str(datetime.datetime.now()),
             'proof': proof,
-            'previous_hash': previous_hash
+            'previous_hash': previous_hash,
+            'transactions': self.transactions
         }
         
+        self.transaction = []
         self.chain.append(block)
         return block
+    
+    #transactions
+    def add_transaction(self, sender, reciever, amount):
+        self.transaction.append({
+            'sender': sender,
+            'reciever': reciever,
+            'amount': amount
+        })
+        previous_block = self.get_previous_block()
+        return previous_block['index'] + 1
     
     #get previous block
     def get_previous_block(self):
@@ -86,6 +130,10 @@ class Blockchain:
 
 #creación de web app con flask
 app = Flask(__name__)
+
+#creando una dirección para el nodo en port 5000
+node_address = str(uuid4()).replace('-', '')
+
 blockchain = Blockchain()
 
 #minamos un nuveo bloque
@@ -96,6 +144,7 @@ def main_block():
     
     proof = blockchain.proof_of_work(previous_proof)
     previous_hash = blockchain.hash(previous_block)
+    blockchain.add_transaction(sender = node_address, reciever = 'Ariel', amount = 1)
     block = blockchain.create_block(proof, previous_hash)
     
     response = {
@@ -103,7 +152,8 @@ def main_block():
         'index': block['index'],
         'timestamp': block['timestamp'],
         'proof': block['proof'],
-        'previous_hash': block['previous_hash']
+        'previous_hash': block['previous_hash'],
+        'transactions': block['transactions']
     }
     
     return jsonify(response), 200
@@ -136,6 +186,28 @@ def is_valid():
 
 #corriendo la web app flask
 app.run(host = '0.0.0.0', port = '5000')
+
+
+#agregando nueva transacción al blockchain
+@app.route('/add_transaction', methods = ['POST'])
+def add_transaction():
+    json = request.get_json() #contiene la transacción
+    transaction_keys = ['sender', 'receiver', 'amount']
+    
+    if not all (key in json for key in transaction_keys):
+        return 'Some element of the transaction is missing', 400
+    
+    index = blockchain.add_transaction(json['sender'], json['reciever'], json['amount'])
+    response = [
+        'message': f'The transaction will be added to the block and the block will be {index}'
+    ]
+    
+    return jsonify(response), 201
+    
+
+
+
+
 
 
 
