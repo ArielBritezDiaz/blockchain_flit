@@ -9,7 +9,7 @@ contract Flitcoin_ICO {
     uint public max_flitcoins = 1000000;
     
     //Tasa de conversión de FLT a USD
-    uint public usd_to_flitcoins = 1000;
+    uint public usd_to_flitcoins = 500;
 
     //Número total de FLT comprados por los inversionistas
     uint public total_flitcoins_bought = 0;
@@ -59,4 +59,15 @@ contract Flitcoin_ICO {
         total_flitcoins_bought -= flitcoins_sold;
     }
 
+    // Depositando fondos en USD (en realidad, en Ether)
+    function deposit_usd() external payable {
+        require(msg.value > 0, "Debe enviar un valor mayor a cero");
+        uint usd_amount = msg.value; // Suponiendo que 1 Ether equivale a 1 USD
+        equity_usd[msg.sender] += usd_amount;
+        // Aquí puedes realizar otras acciones, como emitir un evento o notificar al usuario sobre el depósito.
+    }
+
+    function test() public pure returns(string memory) {
+        return "test worked";
+    }
 }
